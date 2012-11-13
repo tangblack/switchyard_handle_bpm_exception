@@ -14,16 +14,20 @@
 
   <itemDefinition id="_messageContentInItem" />
   <itemDefinition id="_messageContentOutItem" />
+  <itemDefinition id="_faultResultItem" />
 
   <process processType="Private" isExecutable="true" id="FaultResultProcess" name="FaultResultProcess" tns:packageName="com.example.switchyard.handle_bpm_exception" >
 
     <!-- process variables -->
     <property id="messageContentIn" itemSubjectRef="_messageContentInItem"/>
     <property id="messageContentOut" itemSubjectRef="_messageContentOutItem"/>
+    <property id="faultResult" itemSubjectRef="_faultResultItem"/>
 
     <!-- nodes -->
     <startEvent id="StartEvent_1" />
-    <endEvent id="EndEvent_1" />
+    <endEvent id="EndEvent_1" >
+        <terminateEventDefinition/>
+    </endEvent>
     <task id="_3" name="SwitchYard Service" tns:taskName="SwitchYard Service" >
       <extensionElements>
         <tns:onEntry-script scriptFormat="http://www.java.com/java">
@@ -36,13 +40,19 @@
       <ioSpecification>
         <dataInput id="_3_messageContentInInput" name="messageContentIn" />
         <dataInput id="_3_ServiceNameInput" name="ServiceName" />
+        <dataInput id="_3_FaultResultNameInput" name="FaultResultName" />
         <dataInput id="_3_ServiceOperationNameInput" name="ServiceOperationName" />
+        <dataOutput id="_3_faultResultOutput" name="faultResult" />
+        <dataOutput id="_3_messageContentOutOutput" name="messageContentOut" />
         <inputSet>
           <dataInputRefs>_3_messageContentInInput</dataInputRefs>
           <dataInputRefs>_3_ServiceNameInput</dataInputRefs>
+          <dataInputRefs>_3_FaultResultNameInput</dataInputRefs>
           <dataInputRefs>_3_ServiceOperationNameInput</dataInputRefs>
         </inputSet>
         <outputSet>
+          <dataOutputRefs>_3_faultResultOutput</dataOutputRefs>
+          <dataOutputRefs>_3_messageContentOutOutput</dataOutputRefs>
         </outputSet>
       </ioSpecification>
       <dataInputAssociation>
@@ -57,38 +67,121 @@
         </assignment>
       </dataInputAssociation>
       <dataInputAssociation>
+        <targetRef>_3_FaultResultNameInput</targetRef>
+        <assignment>
+          <from xsi:type="tFormalExpression">faultResult</from>
+          <to xsi:type="tFormalExpression">_3_FaultResultNameInput</to>
+        </assignment>
+      </dataInputAssociation>
+      <dataInputAssociation>
         <targetRef>_3_ServiceOperationNameInput</targetRef>
         <assignment>
           <from xsi:type="tFormalExpression">sayHi</from>
           <to xsi:type="tFormalExpression">_3_ServiceOperationNameInput</to>
         </assignment>
       </dataInputAssociation>
+      <dataOutputAssociation>
+        <sourceRef>_3_faultResultOutput</sourceRef>
+        <targetRef>faultResult</targetRef>
+      </dataOutputAssociation>
+      <dataOutputAssociation>
+        <sourceRef>_3_messageContentOutOutput</sourceRef>
+        <targetRef>messageContentOut</targetRef>
+      </dataOutputAssociation>
     </task>
+    <exclusiveGateway id="_4" name="Gateway" gatewayDirection="Diverging" />
+    <scriptTask id="_5" name="Failure" scriptFormat="http://www.java.com/java" >
+      <script>System.out.println("[fault_result_process.bpmn] Failure!");</script>
+    </scriptTask>
+    <scriptTask id="_6" name="Success" scriptFormat="http://www.java.com/java" >
+      <script>System.out.println("[fault_result_process.bpmn] Success!");</script>
+    </scriptTask>
+    <intermediateCatchEvent id="_8" name="Timer" >
+      <timerEventDefinition>
+        <timeDuration xsi:type="tFormalExpression">10s</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <exclusiveGateway id="_9" name="Gateway" gatewayDirection="Converging" />
 
     <!-- connections -->
-    <sequenceFlow id="_3-EndEvent_1" sourceRef="_3" targetRef="EndEvent_1" />
-    <sequenceFlow id="StartEvent_1-_3" sourceRef="StartEvent_1" targetRef="_3" />
+    <sequenceFlow id="_6-EndEvent_1" sourceRef="_6" targetRef="EndEvent_1" />
+    <sequenceFlow id="_9-_3" sourceRef="_9" targetRef="_3" />
+    <sequenceFlow id="_3-_4" sourceRef="_3" targetRef="_4" />
+    <sequenceFlow id="_4-_5" sourceRef="_4" targetRef="_5" name="Failure" tns:priority="2" >
+      <conditionExpression xsi:type="tFormalExpression" language="http://www.java.com/java" >System.out.println("[fault_result_process.bpmn] messageContentOut = " + messageContentOut);
+System.out.println("[fault_result_process.bpmn] faultResult = " + faultResult);
+//return (messageContentOut != null);
+return (faultResult != null);</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="_4-_6" sourceRef="_4" targetRef="_6" name="Success" tns:priority="1" >
+      <conditionExpression xsi:type="tFormalExpression" language="http://www.java.com/java" >System.out.println("[fault_result_process.bpmn] messageContentOut = " + messageContentOut);
+System.out.println("[fault_result_process.bpmn] faultResult = " + faultResult);
+//return (messageContentOut == null);
+return (faultResult == null);</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="_5-_8" sourceRef="_5" targetRef="_8" />
+    <sequenceFlow id="StartEvent_1-_9" sourceRef="StartEvent_1" targetRef="_9" />
+    <sequenceFlow id="_8-_9" sourceRef="_8" targetRef="_9" />
 
   </process>
 
   <bpmndi:BPMNDiagram>
     <bpmndi:BPMNPlane bpmnElement="FaultResultProcess" >
       <bpmndi:BPMNShape bpmnElement="StartEvent_1" >
-        <dc:Bounds x="50" y="50" width="48" height="48" />
+        <dc:Bounds x="313" y="4" width="48" height="48" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="EndEvent_1" >
-        <dc:Bounds x="50" y="365" width="48" height="48" />
+        <dc:Bounds x="313" y="463" width="48" height="48" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape bpmnElement="_3" >
-        <dc:Bounds x="24" y="189" width="100" height="48" />
+        <dc:Bounds x="231" y="210" width="211" height="48" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge bpmnElement="_3-EndEvent_1" >
-        <di:waypoint x="74" y="213" />
-        <di:waypoint x="74" y="389" />
+      <bpmndi:BPMNShape bpmnElement="_4" >
+        <dc:Bounds x="312" y="272" width="48" height="48" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="_5" >
+        <dc:Bounds x="139" y="272" width="80" height="48" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="_6" >
+        <dc:Bounds x="297" y="398" width="80" height="48" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="_8" >
+        <dc:Bounds x="155" y="143" width="48" height="48" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="_9" >
+        <dc:Bounds x="312" y="143" width="48" height="48" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="_6-EndEvent_1" >
+        <di:waypoint x="337" y="422" />
+        <di:waypoint x="337" y="487" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge bpmnElement="StartEvent_1-_3" >
-        <di:waypoint x="74" y="74" />
-        <di:waypoint x="74" y="213" />
+      <bpmndi:BPMNEdge bpmnElement="_9-_3" >
+        <di:waypoint x="336" y="167" />
+        <di:waypoint x="336" y="234" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="_3-_4" >
+        <di:waypoint x="336" y="234" />
+        <di:waypoint x="336" y="296" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="_4-_5" >
+        <di:waypoint x="336" y="296" />
+        <di:waypoint x="179" y="296" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="_4-_6" >
+        <di:waypoint x="336" y="296" />
+        <di:waypoint x="337" y="422" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="_5-_8" >
+        <di:waypoint x="179" y="296" />
+        <di:waypoint x="179" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="StartEvent_1-_9" >
+        <di:waypoint x="337" y="28" />
+        <di:waypoint x="336" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="_8-_9" >
+        <di:waypoint x="179" y="167" />
+        <di:waypoint x="336" y="167" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

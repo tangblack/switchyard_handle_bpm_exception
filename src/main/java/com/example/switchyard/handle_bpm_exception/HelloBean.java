@@ -5,14 +5,26 @@ import org.switchyard.component.bean.Service;
 @Service(HelloBeanInterface.class)
 public class HelloBean implements HelloBeanInterface
 {
-
+	/* Class variable */
+	private static int sSayHiNumber = 0;
+	
+	
 	@Override
 	public String sayHi(String str)
 	{
-		/* Simulate what happens when webservice returns exception. */
-		return sayHiButThrowException();
+		System.out.println("[HelloBean] sSayHiNumber = " + sSayHiNumber);
 		
-//		return sayHiImp(str);
+		if (sSayHiNumber < 3)
+		{
+			/* Simulate what happens when webservice returns exception. */
+			sSayHiNumber++;
+			return sayHiButThrowException();
+		}
+		else
+		{
+			sSayHiNumber++;
+			return sayHiImp(str);
+		}
 	}
 	
 	private String sayHiButThrowException()
